@@ -1,8 +1,11 @@
 {
-  "name": "es2015-library-skeleton",
+  "name": "what-broke",
   "version": "0.0.0-development",
-  "description": "my personal ES2015 library project skeleton",
+  "description": "list breaking changes in newer major versions of packages",
   "main": "index.js",
+  "bin": {
+    "what-broke": "./index.js"
+  },
   "module": "es/index.js",
   "sideEffects": false,
   "scripts": {
@@ -65,20 +68,28 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jedwards1211/es2015-library-skeleton.git"
+    "url": "https://github.com/jedwards1211/what-broke.git"
   },
   "keywords": [
-    "es2015"
+    "breaking-changes",
+    "changelog",
+    "changes",
+    "package",
+    "releases",
+    "github-releases",
+    "semver",
+    "upgrade"
   ],
   "author": "Andy Edwards",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jedwards1211/es2015-library-skeleton/issues"
+    "url": "https://github.com/jedwards1211/what-broke/issues"
   },
-  "homepage": "https://github.com/jedwards1211/es2015-library-skeleton#readme",
+  "homepage": "https://github.com/jedwards1211/what-broke#readme",
   "devDependencies": {
-    "@babel/cli": "^7.1.5",
+    "@babel/cli": "^7.4.4",
     "@babel/core": "^7.1.6",
+    "@babel/node": "^7.2.2",
     "@babel/plugin-proposal-class-properties": "^7.1.0",
     "@babel/plugin-proposal-export-default-from": "^7.0.0",
     "@babel/plugin-proposal-export-namespace-from": "^7.0.0",
@@ -117,7 +128,12 @@
     "semantic-release": "^15.1.4"
   },
   "dependencies": {
-    "@babel/runtime": "^7.1.5"
+    "@babel/runtime": "^7.1.5",
+    "@octokit/rest": "^16.25.1",
+    "chalk": "^2.4.2",
+    "node-fetch": "^2.5.0",
+    "npm-registry-fetch": "^3.9.0",
+    "semver": "^6.0.0"
   },
   "renovate": {
     "extends": [
