@@ -32,7 +32,7 @@ export async function whatBroke(
   }: {
     fromVersion?: ?string,
     toVersion?: ?string,
-  }
+  } = {}
 ): Promise<Object> {
   const npmInfo = await npmRegistryFetch.json(pkg)
   const { repository: { url } = {} } = npmInfo

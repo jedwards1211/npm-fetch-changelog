@@ -6,26 +6,44 @@
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 [![npm version](https://badge.fury.io/js/what-broke.svg)](https://badge.fury.io/js/what-broke)
 
-This is my personal skeleton for creating an ES2015 library npm package. You are welcome to use it.
+list breaking changes in newer major versions of packages
 
-## Quick start
+# How it works
 
-```sh
-npx 0-60 clone https://github.com/jedwards1211/what-broke.git
+Right now only packages hosted on GitHub are supported. `what-broke` will get
+the package info and repository URL from `npm`, then try to fetch and parse the
+package's `CHANGELOG.md` or `changelog.md` in the `master` branch.
+If no changelog file exists it will try to fetch GitHub releases instead
+(which work way better for a tool like this than changelog files, so please use
+GitHub releases!)
+
+# CLI
+
+```
+npm i -g what-broke
 ```
 
-## Tools used
+```
+what-broke <package> [<from verison> [<to version>]]
+```
 
-- babel 7
-- mocha
-- chai
-- istanbul
-- nyc
-- eslint
-- flow
-- prettier
-- husky
-- semantic-release
-- renovate
-- Circle CI
-- Codecov.io
+Will print out the changelog contents for all major and prerelease versions in
+the given range.
+
+# Node.js API
+
+(the CLI just uses this under the hood)
+
+```js
+import whatBroke from 'what-broke'
+```
+
+```js
+async function whatBroke(
+  package: string,
+  options?: {
+    fromVersion?: ?string,
+    toVersion?: ?string,
+  }
+): Promise<Array<{version: string, body: string}>>
+```
