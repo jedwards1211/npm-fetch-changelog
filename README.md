@@ -30,6 +30,9 @@ what-broke <package> [<from verison> [<to version>]]
 Will print out the changelog contents for all major and prerelease versions in
 the given range.
 
+If `package` is installed in the current working directory, `<from version>`
+will default to the installed version.
+
 # Node.js API
 
 (the CLI just uses this under the hood)

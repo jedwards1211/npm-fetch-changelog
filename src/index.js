@@ -96,11 +96,24 @@ export async function whatBroke(
 }
 
 if (!module.parent) {
+  const pkg = process.argv[2]
+  let fromVersion = process.argv[3],
+    toVersion = process.argv[4]
+  if (!fromVersion) {
+    try {
+      // $FlowFixMe
+      fromVersion = require(require.resolve(
+        require('path').join(pkg, 'package.json'),
+        {
+          paths: [process.cwd()],
+        }
+      )).version
+    } catch (error) {
+      // ignore
+    }
+  }
   /* eslint-env node */
-  whatBroke(process.argv[2], {
-    fromVersion: process.argv[3],
-    toVersion: process.argv[4],
-  }).then(
+  whatBroke(pkg, { fromVersion, toVersion }).then(
     (changelog: Array<Release>) => {
       for (const { version, body } of changelog) {
         process.stdout.write(chalk.bold(version) + '\n\n')
