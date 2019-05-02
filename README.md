@@ -17,6 +17,12 @@ If no changelog file exists it will try to fetch GitHub releases instead
 (which work way better for a tool like this than changelog files, so please use
 GitHub releases!)
 
+# GitHub token
+
+GitHub heavily rate limits public API requests, but allows more throughput for
+authenticated requests. If you set the `GH_TOKEN` environment variable to a
+personal access token, `what-broke` will use it when requesting GitHub releases.
+
 # CLI
 
 ```

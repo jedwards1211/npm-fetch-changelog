@@ -5,7 +5,11 @@ import npmRegistryFetch from 'npm-registry-fetch'
 import fetch from 'node-fetch'
 import parseChangelog, { type Release } from './changelog-parser'
 import semver from 'semver'
-const octokit = require('@octokit/rest')()
+import Octokit from '@octokit/rest'
+
+const octokitOptions = {}
+if (process.env.GH_TOKEN) octokitOptions.auth = `token ${process.env.GH_TOKEN}`
+const octokit = new Octokit(octokitOptions)
 
 export async function getChangelog(
   owner: string,
