@@ -10,7 +10,7 @@ const getNpmToken = once(
     if (NPM_TOKEN) return NPM_TOKEN
     try {
       const homedir = os.homedir()
-      const npmrc = await fs.readFile(`${homedir}/.npmrc`)
+      const npmrc = await fs.readFile(`${homedir}/.npmrc`, 'utf8')
       const match = /:_authToken=([a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12})/.exec(
         npmrc
       )
