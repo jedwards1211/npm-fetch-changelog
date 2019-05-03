@@ -3,13 +3,16 @@
 
 import chalk from 'chalk'
 import npmRegistryFetch from 'npm-registry-fetch'
-import fetch from 'node-fetch'
+import { Base64 } from 'js-base64'
 import parseChangelog, { type Release } from './changelog-parser'
 import semver from 'semver'
 import Octokit from '@octokit/rest'
+import getNpmToken from './getNpmToken'
+
+const { GH_TOKEN } = process.env
 
 const octokitOptions = {}
-if (process.env.GH_TOKEN) octokitOptions.auth = `token ${process.env.GH_TOKEN}`
+if (GH_TOKEN) octokitOptions.auth = `token ${GH_TOKEN}`
 const octokit = new Octokit(octokitOptions)
 
 export async function getChangelog(
@@ -18,11 +21,18 @@ export async function getChangelog(
 ): Promise<Array<Release>> {
   let changelog
   for (const file of ['CHANGELOG.md', 'changelog.md']) {
-    const changelogUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/${file}`
-    const res = await fetch(changelogUrl)
-    if (res.ok) {
-      changelog = await res.text()
+    try {
+      const {
+        data: { content },
+      } = await octokit.repos.getContents({
+        owner,
+        repo,
+        path: file,
+      })
+      changelog = Base64.decode(content)
       break
+    } catch (error) {
+      continue
     }
   }
   if (!changelog) throw new Error('failed to get changelog')
@@ -39,7 +49,9 @@ export async function whatBroke(
     toVersion?: ?string,
   } = {}
 ): Promise<Object> {
-  const npmInfo = await npmRegistryFetch.json(pkg)
+  const npmInfo = await npmRegistryFetch.json(pkg, {
+    token: await getNpmToken(),
+  })
   const { repository: { url } = {} } = npmInfo
   if (!url) throw new Error('failed to get repository.url')
   const match = /github\.com\/([^\\]+)\/([^.\\]+)/i.exec(url)
