@@ -88,7 +88,7 @@ export async function whatBroke(
 
     const release: Release = {
       version,
-      header: version,
+      header: `# ${version}`,
       date: new Date(npmInfo.time[version]),
     }
     releases.push(release)
