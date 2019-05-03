@@ -1,7 +1,7 @@
 // @flow
 
 import os from 'os'
-import fs from 'fs-extra'
+import * as fs from 'fs-extra'
 import once from './util/once'
 
 const getNpmToken = once(

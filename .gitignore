@@ -4,6 +4,8 @@ node_modules
 lib
 es
 .eslintcache
-/*.js
-/*.js.flow
+*.js
+*.js.flow
+!/src/**/*.js
+!/test/**/*.js
 !/.babelrc.js
