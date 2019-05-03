@@ -6,6 +6,6 @@ es
 .eslintcache
 *.js
 *.js.flow
-!/src/**/*.js
-!/test/**/*.js
+!/src/**
+!/test/**
 !/.babelrc.js

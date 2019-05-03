@@ -12,7 +12,7 @@ export type Release = {
 export default function parseChangelog(text: string): { [string]: Release } {
   const result = {}
   const versionHeaderRx = new RegExp(
-    `^#+\\s+(${versionRx})(.*)$|^(${versionRx})(.*)(\r\n?|\n)=+`,
+    `^#+\\s+(${versionRx})(.*)$|^(${versionRx})(.*)(\r\n?|\n)(=+|-+)`,
     'mg'
   )
   let match
