@@ -6,10 +6,11 @@ export type Release = {
   version: string,
   body?: string,
   date?: Date,
+  error?: Error,
 }
 
-export default function parseChangelog(text: string): Array<Release> {
-  const result = []
+export default function parseChangelog(text: string): { [string]: Release } {
+  const result = {}
   const versionHeaderRx = new RegExp(
     `^#+\\s+(${versionRx})(.*)$|^(${versionRx})(.*)(\r\n?|\n)=+`,
     'mg'
@@ -22,7 +23,7 @@ export default function parseChangelog(text: string): Array<Release> {
     const version = match[1] || match[4]
     if (release) release.body = text.substring(start, match.index).trim()
     release = { version }
-    result.push(release)
+    result[version] = release
     start = match.index + match[0].length
   }
   if (release) release.body = text.substring(start).trim()

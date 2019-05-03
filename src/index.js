@@ -8,6 +8,7 @@ import parseChangelog, { type Release } from './changelog-parser'
 import semver from 'semver'
 import Octokit from '@octokit/rest'
 import getNpmToken from './getNpmToken'
+import memoize from './util/memoize'
 
 const { GH_TOKEN } = process.env
 
@@ -15,28 +16,35 @@ const octokitOptions = {}
 if (GH_TOKEN) octokitOptions.auth = `token ${GH_TOKEN}`
 const octokit = new Octokit(octokitOptions)
 
-export async function getChangelog(
-  owner: string,
-  repo: string
-): Promise<Array<Release>> {
-  let changelog
-  for (const file of ['CHANGELOG.md', 'changelog.md']) {
-    try {
-      const {
-        data: { content },
-      } = await octokit.repos.getContents({
-        owner,
-        repo,
-        path: file,
-      })
-      changelog = Base64.decode(content)
-      break
-    } catch (error) {
-      continue
+export const getChangelog = memoize(
+  async (owner: string, repo: string): Promise<{ [string]: Release }> => {
+    let changelog
+    for (const file of ['CHANGELOG.md', 'changelog.md']) {
+      try {
+        const {
+          data: { content },
+        } = await octokit.repos.getContents({
+          owner,
+          repo,
+          path: file,
+        })
+        changelog = Base64.decode(content)
+        break
+      } catch (error) {
+        continue
+      }
     }
-  }
-  if (!changelog) throw new Error('failed to get changelog')
-  return await parseChangelog(changelog)
+    if (!changelog) throw new Error('failed to get changelog')
+    return await parseChangelog(changelog)
+  },
+  (owner, repo) => `${owner}/${repo}`
+)
+
+function parseRepositoryUrl(url: string): { owner: string, repo: string } {
+  const match = /github\.com[:/]([^\\]+)\/([^.\\]+)/i.exec(url)
+  if (!match) throw new Error(`repository.url not supported: ${url}`)
+  const [owner, repo] = match.slice(1)
+  return { owner, repo }
 }
 
 export async function whatBroke(
@@ -44,78 +52,81 @@ export async function whatBroke(
   {
     fromVersion,
     toVersion,
+    full,
   }: {
     fromVersion?: ?string,
     toVersion?: ?string,
+    full?: ?boolean,
   } = {}
 ): Promise<Object> {
   const npmInfo = await npmRegistryFetch.json(pkg, {
     token: await getNpmToken(),
   })
-  const { repository: { url } = {} } = npmInfo
-  if (!url) throw new Error('failed to get repository.url')
-  const match = /github\.com\/([^\\]+)\/([^.\\]+)/i.exec(url)
-  if (!match) throw new Error(`repository.url not supported: ${url}`)
-  const [owner, repo] = match.slice(1)
-  let changelog
-  await getChangelog(owner, repo)
-    .then(c => (changelog = c))
-    .catch(() => {})
 
-  const result = []
-
-  if (changelog) {
-    let prevVersion = fromVersion
-    for (const release of changelog.reverse()) {
-      const { version } = release
-      if (!version) continue
-      if (prevVersion && semver.lte(version, prevVersion)) continue
-      if (toVersion && semver.gt(version, toVersion)) break
-      if (
-        prevVersion == null ||
-        semver.prerelease(version) ||
-        !semver.satisfies(version, `^${prevVersion}`)
-      ) {
-        result.push(release)
-        prevVersion = version
-      }
+  const versions = Object.keys(npmInfo.versions).filter(
+    (v: string): boolean => {
+      if (fromVersion && !semver.gt(v, fromVersion)) return false
+      if (toVersion && !semver.lt(v, toVersion)) return false
+      return true
     }
-  } else {
-    const versions = Object.keys(npmInfo.versions)
+  )
 
-    let prevVersion = fromVersion
-    for (const version of versions) {
-      if (!version) continue
-      if (prevVersion && semver.lte(version, prevVersion)) continue
-      if (toVersion && semver.gt(version, toVersion)) break
-      if (
-        prevVersion == null ||
-        semver.prerelease(version) ||
-        !semver.satisfies(version, `^${prevVersion}`)
-      ) {
-        await octokit.repos
-          .getReleaseByTag({
-            owner,
-            repo,
-            tag: `v${version}`,
-          })
-          .then(({ data: { body } }: Object) => {
-            result.push({ version, body })
-          })
-          .catch(() => {})
+  const releases = []
 
-        prevVersion = version
+  let prevVersion = fromVersion
+  for (let version of versions) {
+    if (
+      !full &&
+      prevVersion != null &&
+      !semver.prerelease(version) &&
+      semver.satisfies(version, `^${prevVersion}`) &&
+      !(semver.prerelease(prevVersion) && !semver.prerelease(version))
+    ) {
+      continue
+    }
+    prevVersion = version
+
+    const release: Release = { version, date: new Date(npmInfo.time[version]) }
+    releases.push(release)
+
+    const { url } =
+      npmInfo.versions[version].repository || npmInfo.repository || {}
+    if (!url) {
+      release.error = new Error('failed to get repository url from npm')
+    }
+
+    try {
+      const { owner, repo } = parseRepositoryUrl(url)
+
+      try {
+        release.body = (await octokit.repos.getReleaseByTag({
+          owner,
+          repo,
+          tag: `v${version}`,
+        })).data.body
+      } catch (error) {
+        const changelog = await getChangelog(owner, repo)
+        if (changelog[version]) release.body = changelog[version].body
       }
+      if (!release.body) {
+        release.error = new Error(
+          `failed to find GitHub release or changelog entry for version ${version}`
+        )
+      }
+    } catch (error) {
+      release.error = error
     }
   }
 
-  return result
+  return releases
 }
 
 if (!module.parent) {
-  const pkg = process.argv[2]
-  let fromVersion = process.argv[3],
-    toVersion = process.argv[4]
+  const full = process.argv.indexOf('--full') >= 0
+  const args = process.argv.slice(2).filter(a => a[0] !== '-')
+  const pkg = args[0]
+  let fromVersion = args[1],
+    toVersion = args[2]
   if (!fromVersion) {
     try {
       // $FlowFixMe
@@ -130,11 +141,14 @@ if (!module.parent) {
     }
   }
   /* eslint-env node */
-  whatBroke(pkg, { fromVersion, toVersion }).then(
+  whatBroke(pkg, { fromVersion, toVersion, full }).then(
     (changelog: Array<Release>) => {
-      for (const { version, body } of changelog) {
+      for (const { version, body, error } of changelog) {
         process.stdout.write(chalk.bold(version) + '\n\n')
         if (body) process.stdout.write(body + '\n\n')
+        if (error) {
+          process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
+        }
       }
       process.exit(0)
     },
