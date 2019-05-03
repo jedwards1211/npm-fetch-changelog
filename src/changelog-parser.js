@@ -1,6 +1,6 @@
 // @flow
 
-const versionRx = `v?\\d+\\.\\d+\\.\\d+(-[-a-z0-9.]+)?`
+const versionRx = `v?\\d+\\.\\d+(\\.\\d+(-[-a-z0-9.]+)?)?`
 
 export type Release = {
   version: string,
@@ -20,7 +20,8 @@ export default function parseChangelog(text: string): { [string]: Release } {
   let release: ?Release
   while ((match = versionHeaderRx.exec(text))) {
     // console.log(match)
-    const version = match[1] || match[4]
+    let version = match[1] || match[5]
+    if (!match[2] && !match[6]) version += '.0'
     if (release) release.body = text.substring(start, match.index).trim()
     release = { version }
     result[version] = release
