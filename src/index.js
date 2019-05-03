@@ -86,7 +86,11 @@ export async function whatBroke(
     }
     prevVersion = version
 
-    const release: Release = { version, date: new Date(npmInfo.time[version]) }
+    const release: Release = {
+      version,
+      header: version,
+      date: new Date(npmInfo.time[version]),
+    }
     releases.push(release)
 
     const { url } =
@@ -99,14 +103,28 @@ export async function whatBroke(
       const { owner, repo } = parseRepositoryUrl(url)
 
       try {
-        release.body = (await octokit.repos.getReleaseByTag({
+        const body = (await octokit.repos.getReleaseByTag({
           owner,
           repo,
           tag: `v${version}`,
         })).data.body
+
+        release.body = body
+
+        const parsed = parseChangelog(body)
+        for (let v in parsed) {
+          if (v === version) {
+            const { header, body } = parsed[v]
+            release.header = header
+            release.body = body
+            break
+          }
+        }
       } catch (error) {
         const changelog = await getChangelog(owner, repo)
-        if (changelog[version]) release.body = changelog[version].body
+        const { header, body } = changelog[version] || {}
+        release.header = header
+        release.body = body
       }
       if (!release.body) {
         release.error = new Error(
@@ -143,8 +161,8 @@ if (!module.parent) {
   /* eslint-env node */
   whatBroke(pkg, { fromVersion, toVersion, full }).then(
     (changelog: Array<Release>) => {
-      for (const { version, body, error } of changelog) {
-        process.stdout.write(chalk.bold(version) + '\n\n')
+      for (const { header, body, error } of changelog) {
+        process.stdout.write(chalk.bold(`# ${header}`) + '\n\n')
         if (body) process.stdout.write(body + '\n\n')
         if (error) {
           process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
