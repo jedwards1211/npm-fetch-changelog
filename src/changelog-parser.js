@@ -26,7 +26,7 @@ export default function parseChangelog(text: string): { [string]: Release } {
     if (release) release.body = text.substring(start, match.index).trim()
     release = {
       version,
-      header: `${rawVersion}${match[4] || match[8] || ''}`.trim(),
+      header: match[0],
     }
     result[version] = release
     start = match.index + match[0].length

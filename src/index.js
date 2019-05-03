@@ -162,7 +162,7 @@ if (!module.parent) {
   whatBroke(pkg, { fromVersion, toVersion, full }).then(
     (changelog: Array<Release>) => {
       for (const { header, body, error } of changelog) {
-        process.stdout.write(chalk.bold(`# ${header}`) + '\n\n')
+        process.stdout.write(chalk.bold(header) + '\n\n')
         if (body) process.stdout.write(body + '\n\n')
         if (error) {
           process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
