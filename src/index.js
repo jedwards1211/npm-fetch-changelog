@@ -103,11 +103,19 @@ export async function whatBroke(
       const { owner, repo } = parseRepositoryUrl(url)
 
       try {
-        const body = (await octokit.repos.getReleaseByTag({
-          owner,
-          repo,
-          tag: `v${version}`,
-        })).data.body
+        const body = (await octokit.repos
+          .getReleaseByTag({
+            owner,
+            repo,
+            tag: `v${version}`,
+          })
+          .catch(() =>
+            octokit.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: version,
+            })
+          )).data.body
 
         release.body = body
 

@@ -17,6 +17,18 @@ fall back to trying to parse the package's `CHANGELOG.md` or `changelog.md`.
 GitHub releases are way more reliable for this purpose though, so please use
 them!
 
+# Caveats
+
+`what-broke` inevitably fails to find changelog entries for some packages/releases
+because many maintainers are not very detail-oriented about it (and don't choose
+to use excellent tools that would do the work for them, like
+[`semantic-release`](https://github.com/semantic-release/semantic-release)).
+
+However, I've also seen cases where some versions were never published to npm
+(for instance, at the time of writing, `superagent` version 5.0.0 was never
+published to npm, yet it does have a changelog entry). `what-broke` currently
+only displays changelog entries for published versions.
+
 # API Tokens
 
 GitHub heavily rate limits public API requests, but allows more throughput for
