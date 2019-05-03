@@ -115,15 +115,15 @@ export async function whatBroke(
         for (let v in parsed) {
           if (v === version) {
             const { header, body } = parsed[v]
-            release.header = header
-            release.body = body
+            if (header) release.header = header
+            if (body) release.body = body
             break
           }
         }
       } catch (error) {
         const changelog = await getChangelog(owner, repo)
         const { header, body } = changelog[version] || {}
-        release.header = header
+        if (header) release.header = header
         release.body = body
       }
       if (!release.body) {
