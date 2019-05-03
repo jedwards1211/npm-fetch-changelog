@@ -1,6 +1,6 @@
 // @flow
 
-const versionRx = `\\d+\\.\\d+\\.\\d+(-[-a-z0-9.]+)?`
+const versionRx = `v?\\d+\\.\\d+\\.\\d+(-[-a-z0-9.]+)?`
 
 export type Release = {
   version: string,
