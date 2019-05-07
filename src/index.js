@@ -42,7 +42,7 @@ const octokitOptions: Object = {
 if (GH_TOKEN) octokitOptions.auth = `token ${GH_TOKEN}`
 const octokit = new Octokit(octokitOptions)
 
-export const getChangelog = memoize(
+export const getChangelogFromFile = memoize(
   async (owner: string, repo: string): Promise<{ [string]: Release }> => {
     let changelog
     let lastError: ?Error
@@ -106,14 +106,14 @@ export type Options = {
 export async function fetchChangelog(
   pkg: string,
   { include }: Options = {}
-): Promise<Object> {
+): Promise<{ [version: string]: Release }> {
   const npmInfo = await npmRegistryFetch.json(pkg, {
     token: await getNpmToken(),
   })
 
   const versions = Object.keys(npmInfo.versions).filter(includeFilter(include))
 
-  const releases = []
+  const releases = {}
 
   for (let version of versions) {
     const release: Release = {
@@ -121,7 +121,7 @@ export async function fetchChangelog(
       header: `# ${version}`,
       date: new Date(npmInfo.time[version]),
     }
-    releases.push(release)
+    releases[version] = release
 
     const { url } =
       npmInfo.versions[version].repository || npmInfo.repository || {}
@@ -159,7 +159,7 @@ export async function fetchChangelog(
           }
         }
       } catch (error) {
-        const changelog = await getChangelog(owner, repo)
+        const changelog = await getChangelogFromFile(owner, repo)
         const { header, body } = changelog[version] || {}
         if (header) release.header = header
         release.body = body
@@ -178,25 +178,22 @@ export async function fetchChangelog(
 }
 
 if (!module.parent) {
-  let {
-    argv: {
-      _: [pkg],
-      range,
-      includePrereleases: prereleases,
-      minor,
-      patch,
-    },
-  } = require('yargs')
+  /* eslint-env node */
+  const { argv } = require('yargs')
     .usage(
       `Usage: $0 <package name>
 
-Fetches changelog entries for an npm package from GitHub.
+Prints changelog entries for an npm package from GitHub.
 (Other repository hosts aren't currently supported.)`
     )
     .option('r', {
       alias: 'range',
       describe: 'semver version range to get changelog entries for',
       type: 'string',
+    })
+    .option('json', {
+      describe: 'output json',
+      type: 'boolean',
     })
     .option('prereleases', {
       describe: 'include prerelease versions',
@@ -212,6 +209,15 @@ Fetches changelog entries for an npm package from GitHub.
     .hide('patch')
     .describe('no-patch', 'exclude patch versions')
     .hide('version')
+
+  let {
+    _: [pkg],
+    range,
+    includePrereleases: prerelease,
+    minor,
+    patch,
+    json,
+  } = argv
 
   if (!pkg) {
     require('yargs').showHelp()
@@ -232,21 +238,26 @@ Fetches changelog entries for an npm package from GitHub.
     }
   }
 
-  /* eslint-env node */
   fetchChangelog(pkg, {
     include: {
       range,
-      prereleases,
+      prerelease,
       minor,
       patch,
     },
   }).then(
-    (changelog: Array<Release>) => {
-      for (const { header, body, error } of changelog) {
-        process.stdout.write(chalk.bold(header) + '\n\n')
-        if (body) process.stdout.write(body + '\n\n')
-        if (error) {
-          process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
+    (changelog: { [version: string]: Release }) => {
+      if (json) {
+        process.stdout.write(JSON.stringify(changelog, null, 2))
+      } else {
+        for (const version in changelog) {
+          if (!changelog.hasOwnProperty(version)) continue
+          const { header, body, error } = changelog[version]
+          process.stdout.write(chalk.bold(header) + '\n\n')
+          if (body) process.stdout.write(body + '\n\n')
+          if (error) {
+            process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
+          }
         }
       }
       process.exit(0)

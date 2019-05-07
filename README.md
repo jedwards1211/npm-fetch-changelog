@@ -46,15 +46,29 @@ npm i -g what-broke
 ```
 
 ```
-what-broke <package> [--full] [<from verison> [<to version>]]
+what-broke <package name>
 ```
 
-Will print out the changelog contents for all major and prerelease versions in
-the given range. (If `--full` is given, it will also include minor and patch
-versions.)
+Prints changelog entries fetched from GitHub for each
+version released on npm in the given range.
 
-If `package` is installed in the current working directory, `<from version>`
-will default to the installed version.
+## Options:
+
+### `-r`, `--range`
+
+semver version range to get changelog entries for, e.g. `^7.0.0` (defaults to `>` the version installed in the working directory, if it exists)
+
+### `--prereleases`
+
+include prerelease versions
+
+### `--no-minor`
+
+exclude minor versions
+
+### `--no-patch`
+
+exclude patch versions (defaults to `--no-minor`)
 
 # Node.js API
 
@@ -68,9 +82,12 @@ import whatBroke from 'what-broke'
 async function whatBroke(
   package: string,
   options?: {
-    fromVersion?: ?string,
-    toVersion?: ?string,
-    full?: ?boolean,
+    include?: ?(((version: string) => boolean) | {
+      range?: ?string,
+      prerelease?: ?boolean,
+      minor?: ?boolean,
+      patch?: ?boolean,
+    }),
   }
 ): Promise<Array<{version: string, body: string}>>
 ```
