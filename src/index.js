@@ -4,7 +4,7 @@
 import chalk from 'chalk'
 import npmRegistryFetch from 'npm-registry-fetch'
 import { Base64 } from 'js-base64'
-import parseChangelog, { type Release } from './changelog-parser'
+import parseChangelog, { type Release } from './parseChangelog'
 import semver from 'semver'
 import _Octokit from '@octokit/rest'
 import octokitThrottling from '@octokit/plugin-throttling'
@@ -45,6 +45,7 @@ const octokit = new Octokit(octokitOptions)
 export const getChangelog = memoize(
   async (owner: string, repo: string): Promise<{ [string]: Release }> => {
     let changelog
+    let lastError: ?Error
     for (const file of ['CHANGELOG.md', 'changelog.md']) {
       try {
         const {
@@ -57,10 +58,13 @@ export const getChangelog = memoize(
         changelog = Base64.decode(content)
         break
       } catch (error) {
+        lastError = error
         continue
       }
     }
-    if (!changelog) throw new Error('failed to get changelog')
+    if (!changelog) {
+      throw lastError || new Error(`failed to find changelog file`)
+    }
     return await parseChangelog(changelog)
   },
   (owner, repo) => `${owner}/${repo}`
@@ -73,45 +77,45 @@ function parseRepositoryUrl(url: string): { owner: string, repo: string } {
   return { owner, repo }
 }
 
-export async function whatBroke(
+export type IncludeOption =
+  | ((version: string) => boolean)
+  | {
+      range?: ?string,
+      prerelease?: ?boolean,
+      minor?: ?boolean,
+      patch?: ?boolean,
+    }
+
+function includeFilter(include: ?IncludeOption): (version: string) => boolean {
+  if (!include) return () => true
+  if (typeof include === 'function') return include
+  const { range, prerelease, minor, patch = minor } = include
+  return (version: string): boolean => {
+    if (range && !semver.satisfies(version, range)) return false
+    if (!prerelease && semver.prerelease(version)) return false
+    if (minor === false && semver.minor(version)) return false
+    if (patch === false && semver.patch(version)) return false
+    return true
+  }
+}
+
+export type Options = {
+  include?: ?IncludeOption,
+}
+
+export async function fetchChangelog(
   pkg: string,
-  {
-    fromVersion,
-    toVersion,
-    full,
-  }: {
-    fromVersion?: ?string,
-    toVersion?: ?string,
-    full?: ?boolean,
-  } = {}
+  { include }: Options = {}
 ): Promise<Object> {
   const npmInfo = await npmRegistryFetch.json(pkg, {
     token: await getNpmToken(),
   })
 
-  const versions = Object.keys(npmInfo.versions).filter(
-    (v: string): boolean => {
-      if (fromVersion && !semver.gt(v, fromVersion)) return false
-      if (toVersion && !semver.lt(v, toVersion)) return false
-      return true
-    }
-  )
+  const versions = Object.keys(npmInfo.versions).filter(includeFilter(include))
 
   const releases = []
 
-  let prevVersion = fromVersion
   for (let version of versions) {
-    if (
-      !full &&
-      prevVersion != null &&
-      !semver.prerelease(version) &&
-      semver.satisfies(version, `^${prevVersion}`) &&
-      !(semver.prerelease(prevVersion) && !semver.prerelease(version))
-    ) {
-      continue
-    }
-    prevVersion = version
-
     const release: Release = {
       version,
       header: `# ${version}`,
@@ -174,26 +178,69 @@ export async function whatBroke(
 }
 
 if (!module.parent) {
-  const full = process.argv.indexOf('--full') >= 0
-  const args = process.argv.slice(2).filter(a => a[0] !== '-')
-  const pkg = args[0]
-  let fromVersion = args[1],
-    toVersion = args[2]
-  if (!fromVersion) {
+  let {
+    argv: {
+      _: [pkg],
+      range,
+      includePrereleases: prereleases,
+      minor,
+      patch,
+    },
+  } = require('yargs')
+    .usage(
+      `Usage: $0 <package name>
+
+Fetches changelog entries for an npm package from GitHub.
+(Other repository hosts aren't currently supported.)`
+    )
+    .option('r', {
+      alias: 'range',
+      describe: 'semver version range to get changelog entries for',
+      type: 'string',
+    })
+    .option('prereleases', {
+      describe: 'include prerelease versions',
+      type: 'boolean',
+      default: false,
+    })
+    .default('minor', true)
+    .boolean('minor')
+    .hide('minor')
+    .describe('no-minor', 'exclude minor versions')
+    .default('patch', undefined)
+    .boolean('patch')
+    .hide('patch')
+    .describe('no-patch', 'exclude patch versions')
+    .hide('version')
+
+  if (!pkg) {
+    require('yargs').showHelp()
+    process.exit(1)
+  }
+  if (!range) {
     try {
       // $FlowFixMe
-      fromVersion = require(require.resolve(
+      const { version } = require(require.resolve(
         require('path').join(pkg, 'package.json'),
         {
           paths: [process.cwd()],
         }
-      )).version
+      ))
+      range = `>${version}`
     } catch (error) {
       // ignore
     }
   }
+
   /* eslint-env node */
-  whatBroke(pkg, { fromVersion, toVersion, full }).then(
+  fetchChangelog(pkg, {
+    include: {
+      range,
+      prereleases,
+      minor,
+      patch,
+    },
+  }).then(
     (changelog: Array<Release>) => {
       for (const { header, body, error } of changelog) {
         process.stdout.write(chalk.bold(header) + '\n\n')
