@@ -1,7 +1,7 @@
 {
   "name": "npm-fetch-changelog",
   "version": "0.0.0-development",
-  "description": "list breaking changes in newer major versions of packages",
+  "description": "fetch the changelog for an npm package from GitHub",
   "main": "index.js",
   "bin": {
     "npm-fetch-changelog": "./index.js"
