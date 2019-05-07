@@ -1,10 +1,10 @@
 {
-  "name": "what-broke",
+  "name": "npm-fetch-changelog",
   "version": "0.0.0-development",
   "description": "list breaking changes in newer major versions of packages",
   "main": "index.js",
   "bin": {
-    "what-broke": "./index.js"
+    "npm-fetch-changelog": "./index.js"
   },
   "engines": {
     "node": ">=8.0.0"
@@ -71,7 +71,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jedwards1211/what-broke.git"
+    "url": "https://github.com/jedwards1211/npm-fetch-changelog.git"
   },
   "keywords": [
     "breaking-changes",
@@ -86,9 +86,9 @@
   "author": "Andy Edwards",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jedwards1211/what-broke/issues"
+    "url": "https://github.com/jedwards1211/npm-fetch-changelog/issues"
   },
-  "homepage": "https://github.com/jedwards1211/what-broke#readme",
+  "homepage": "https://github.com/jedwards1211/npm-fetch-changelog#readme",
   "devDependencies": {
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.1.6",
