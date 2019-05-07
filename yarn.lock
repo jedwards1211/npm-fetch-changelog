@@ -922,6 +922,13 @@
     universal-user-agent "^2.0.1"
     url-template "^2.0.8"
 
+"@octokit/plugin-throttling@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@octokit/plugin-throttling/-/plugin-throttling-2.4.0.tgz#add1bd6a797aa210ce860e8bbe7f7505ba5e4d99"
+  integrity sha512-0bYfgQdqAtWiqXvS6oKMiousTno+e3pFoaYS57LpAp8p56Far49/vpGvbEvBUuNyoUFgOcTGm5WTpO1IPptHuQ==
+  dependencies:
+    bottleneck "^2.15.3"
+
 "@octokit/request@3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@octokit/request/-/request-3.0.1.tgz#21e888c6dce80566ec69477360bab79f2f14861f"
@@ -1517,6 +1524,11 @@ bottleneck@^2.0.1:
   version "2.13.0"
   resolved "https://registry.yarnpkg.com/bottleneck/-/bottleneck-2.13.0.tgz#875df17df9e62c76bea42b62af3a45c73a995c4f"
   integrity sha512-9YmZ0aiKta2OAxTujKCS/INjGWCIGWK4Ff1nQpgHnR4CTjlk9jcnpaHOjPnMZPtqRXkqwKdtxZgvJ9udsXylaw==
+
+bottleneck@^2.15.3:
+  version "2.18.0"
+  resolved "https://registry.yarnpkg.com/bottleneck/-/bottleneck-2.18.0.tgz#41fa63ae185b65435d789d1700334bc48222dacf"
+  integrity sha512-U1xiBRaokw4yEguzikOl0VrnZp6uekjpmfrh6rKtr1D+/jFjYCL6J83ZXlGtlBDwVdTmJJ+4Lg5FpB3xmLSiyA==
 
 boxen@^1.2.1:
   version "1.3.0"

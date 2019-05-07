@@ -6,13 +6,39 @@ import npmRegistryFetch from 'npm-registry-fetch'
 import { Base64 } from 'js-base64'
 import parseChangelog, { type Release } from './changelog-parser'
 import semver from 'semver'
-import Octokit from '@octokit/rest'
+import _Octokit from '@octokit/rest'
+import octokitThrottling from '@octokit/plugin-throttling'
 import getNpmToken from './getNpmToken'
 import memoize from './util/memoize'
 
+const Octokit = _Octokit.plugin(octokitThrottling)
+
 const { GH_TOKEN } = process.env
 
-const octokitOptions = {}
+type LimitOptions = {
+  method: string,
+  url: string,
+  request: {
+    retryCount: number,
+  },
+}
+
+const octokitOptions: Object = {
+  throttle: {
+    onRateLimit: (retryAfter: number, options: LimitOptions) => {
+      octokit.log.warn(
+        `Request quota exhausted for request ${options.method} ${options.url}`
+      )
+      return options.request.retryCount < 3
+    },
+    onAbuseLimit: (retryAfter: number, options: LimitOptions) => {
+      // does not retry, only logs a warning
+      octokit.log.warn(
+        `Abuse detected for request ${options.method} ${options.url}`
+      )
+    },
+  },
+}
 if (GH_TOKEN) octokitOptions.auth = `token ${GH_TOKEN}`
 const octokit = new Octokit(octokitOptions)
 
