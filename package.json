@@ -132,7 +132,8 @@
     "yargs": "^13.2.2"
   },
   "bin": {
-    "npm-fetch-changelog": "./cli.js"
+    "npm-fetch-changelog": "./cli/npm-fetch-changelog.js",
+    "what-broke": "./cli/what-broke.js"
   },
   "engines": {
     "node": ">=12"

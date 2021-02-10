@@ -4,8 +4,8 @@
 import chalk from 'chalk'
 import yargs from 'yargs'
 import path from 'path'
-import { fetchChangelog } from './index'
-import { type Release } from './parseChangelog'
+import { fetchChangelog } from '../index'
+import { type Release } from '../parseChangelog'
 
 /* eslint-env node */
 const { argv } = yargs

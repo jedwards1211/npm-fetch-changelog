@@ -56,10 +56,13 @@ npm i -g npm-fetch-changelog
 
 ```
 npm-fetch-changelog <package name>[@<range>]
+what-broke <package name>[@<range>]
 ```
 
 Prints changelog entries fetched from GitHub for each
 version released on npm in the given range.
+
+`what-broke` is just a shortcut for `npm-fetch-changelog --no-minor`.
 
 ## Options:
 
