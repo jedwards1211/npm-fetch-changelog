@@ -5,7 +5,7 @@
 
 export default function memoize<F: (...args: any[]) => any>(
   fn: F,
-  resolver?: (...args: any[]) => any = first => String(first)
+  resolver?: (...args: any[]) => any = (first) => String(first)
 ): F {
   const cache = new Map()
   return ((...args: any[]): any => {

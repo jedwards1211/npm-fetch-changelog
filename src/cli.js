@@ -62,6 +62,7 @@ if (!range) {
       // $FlowFixMe
       const { version } = require(require.resolve(
         path.join(pkg, 'package.json'),
+        // $FlowFixMe
         {
           paths: [process.cwd()],
         }
@@ -86,7 +87,7 @@ fetchChangelog(pkg, {
       process.stdout.write(JSON.stringify(changelog, null, 2))
     } else {
       for (const version in changelog) {
-        if (!changelog.hasOwnProperty(version)) continue
+        if (!Object.prototype.hasOwnProperty.call(changelog, version)) continue
         const { header, body, error } = changelog[version]
         process.stdout.write(chalk.bold(header) + '\n\n')
         if (body) process.stdout.write(body + '\n\n')

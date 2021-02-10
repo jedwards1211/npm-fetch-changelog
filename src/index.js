@@ -1,4 +1,4 @@
-#!/usr/bin/env node/* @flow */
+// @flow
 
 import npmRegistryFetch from 'npm-registry-fetch'
 import { Base64 } from 'js-base64'
@@ -10,45 +10,44 @@ import octokitThrottling from '@octokit/plugin-throttling'
 import memoize from './util/memoize'
 import once from './util/once'
 
-const getOctokit = once(
-  async (): Promise<_Octokit> => {
-    const Octokit = _Octokit.plugin(octokitThrottling)
+const getOctokit = once(async (): Promise<any> => {
+  const Octokit = _Octokit.plugin(octokitThrottling)
 
-    const { githubToken } = await getConfig()
+  const { githubToken } = await getConfig()
 
-    type LimitOptions = {
-      method: string,
-      url: string,
-      request: {
-        retryCount: number,
-      },
-    }
-
-    const octokitOptions: Object = {
-      throttle: {
-        onRateLimit: (retryAfter: number, options: LimitOptions) => {
-          octokit.log.warn(
-            `Request quota exhausted for request ${options.method} ${
-              options.url
-            }`
-          )
-          return options.request.retryCount < 3
-        },
-        onAbuseLimit: (retryAfter: number, options: LimitOptions) => {
-          // does not retry, only logs a warning
-          octokit.log.warn(
-            `Abuse detected for request ${options.method} ${options.url}`
-          )
-        },
-      },
-    }
-    if (githubToken) octokitOptions.auth = `token ${githubToken}`
-    const octokit = new Octokit(octokitOptions)
-    return octokit
+  type LimitOptions = {
+    method: string,
+    url: string,
+    request: {
+      retryCount: number,
+    },
   }
-)
 
-export const getChangelogFromFile = memoize(
+  const octokitOptions: Object = {
+    throttle: {
+      onRateLimit: (retryAfter: number, options: LimitOptions): boolean => {
+        octokit.log.warn(
+          `Request quota exhausted for request ${options.method} ${options.url}`
+        )
+        return options.request.retryCount < 3
+      },
+      onAbuseLimit: (retryAfter: number, options: LimitOptions) => {
+        // does not retry, only logs a warning
+        octokit.log.warn(
+          `Abuse detected for request ${options.method} ${options.url}`
+        )
+      },
+    },
+  }
+  if (githubToken) octokitOptions.auth = `token ${githubToken}`
+  const octokit = new Octokit(octokitOptions)
+  return octokit
+})
+
+export const getChangelogFromFile: (
+  owner: string,
+  repo: string
+) => Promise<{ [string]: Release }> = memoize(
   async (owner: string, repo: string): Promise<{ [string]: Release }> => {
     const octokit = await getOctokit()
     let changelog
@@ -143,19 +142,21 @@ export async function fetchChangelog(
       const { owner, repo } = parseRepositoryUrl(url)
 
       try {
-        const body = (await octokit.repos
-          .getReleaseByTag({
-            owner,
-            repo,
-            tag: `v${version}`,
-          })
-          .catch(() =>
-            octokit.repos.getReleaseByTag({
+        const body = (
+          await octokit.repos
+            .getReleaseByTag({
               owner,
               repo,
-              tag: version,
+              tag: `v${version}`,
             })
-          )).data.body
+            .catch(() =>
+              octokit.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag: version,
+              })
+            )
+        ).data.body
 
         release.body = body
 

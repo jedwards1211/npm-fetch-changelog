@@ -1,10 +1,19 @@
-coverage
-.nyc_output
+/coverage
+/.nyc_output
 node_modules
-lib
-es
+/lib
+/es
 .eslintcache
+<<<<<<< HEAD
 /*.js
 /*.js.flow
 /util
+=======
+*.js
+*.js.flow
+*.ts
+!/src/**/*.js
+!/src/**/*.ts
+!/test/**/*.js
+>>>>>>> 83ad9ee590a593dc104a8c91f9b421e9a3437be8
 !/.babelrc.js
