@@ -39,6 +39,15 @@ personal access token, `npm-fetch-changelog` will use it when requesting GitHub 
 the npm token from your `~/.npmrc`, so that it can get information for private
 packages you request.
 
+You can also store one or both of these tokesn in `~/.config/npm-fetch-changelog.json`:
+
+```json
+{
+  "githubToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "npmToken": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
 # CLI
 
 ```
@@ -46,7 +55,7 @@ npm i -g npm-fetch-changelog
 ```
 
 ```
-npm-fetch-changelog <package name>
+npm-fetch-changelog <package name>[@<range>]
 ```
 
 Prints changelog entries fetched from GitHub for each
@@ -57,6 +66,12 @@ version released on npm in the given range.
 ### `-r`, `--range`
 
 semver version range to get changelog entries for, e.g. `^7.0.0` (defaults to `>` the version installed in the working directory, if it exists)
+
+You can also pass the range together with the package name (you might need to quote it):
+
+```
+npm-fetch-changelog 'foo@>=2'
+```
 
 ### `--json`
 

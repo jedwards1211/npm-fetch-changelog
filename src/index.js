@@ -1,49 +1,56 @@
-#!/usr/bin/env node
-/* @flow */
+#!/usr/bin/env node/* @flow */
 
-import chalk from 'chalk'
 import npmRegistryFetch from 'npm-registry-fetch'
 import { Base64 } from 'js-base64'
 import parseChangelog, { type Release } from './parseChangelog'
 import semver from 'semver'
+import getConfig from './getConfig'
 import _Octokit from '@octokit/rest'
 import octokitThrottling from '@octokit/plugin-throttling'
-import getNpmToken from './getNpmToken'
 import memoize from './util/memoize'
+import once from './util/once'
 
-const Octokit = _Octokit.plugin(octokitThrottling)
+const getOctokit = once(
+  async (): Promise<_Octokit> => {
+    const Octokit = _Octokit.plugin(octokitThrottling)
 
-const { GH_TOKEN } = process.env
+    const { githubToken } = await getConfig()
 
-type LimitOptions = {
-  method: string,
-  url: string,
-  request: {
-    retryCount: number,
-  },
-}
+    type LimitOptions = {
+      method: string,
+      url: string,
+      request: {
+        retryCount: number,
+      },
+    }
 
-const octokitOptions: Object = {
-  throttle: {
-    onRateLimit: (retryAfter: number, options: LimitOptions) => {
-      octokit.log.warn(
-        `Request quota exhausted for request ${options.method} ${options.url}`
-      )
-      return options.request.retryCount < 3
-    },
-    onAbuseLimit: (retryAfter: number, options: LimitOptions) => {
-      // does not retry, only logs a warning
-      octokit.log.warn(
-        `Abuse detected for request ${options.method} ${options.url}`
-      )
-    },
-  },
-}
-if (GH_TOKEN) octokitOptions.auth = `token ${GH_TOKEN}`
-const octokit = new Octokit(octokitOptions)
+    const octokitOptions: Object = {
+      throttle: {
+        onRateLimit: (retryAfter: number, options: LimitOptions) => {
+          octokit.log.warn(
+            `Request quota exhausted for request ${options.method} ${
+              options.url
+            }`
+          )
+          return options.request.retryCount < 3
+        },
+        onAbuseLimit: (retryAfter: number, options: LimitOptions) => {
+          // does not retry, only logs a warning
+          octokit.log.warn(
+            `Abuse detected for request ${options.method} ${options.url}`
+          )
+        },
+      },
+    }
+    if (githubToken) octokitOptions.auth = `token ${githubToken}`
+    const octokit = new Octokit(octokitOptions)
+    return octokit
+  }
+)
 
 export const getChangelogFromFile = memoize(
   async (owner: string, repo: string): Promise<{ [string]: Release }> => {
+    const octokit = await getOctokit()
     let changelog
     let lastError: ?Error
     for (const file of ['CHANGELOG.md', 'changelog.md']) {
@@ -107,8 +114,11 @@ export async function fetchChangelog(
   pkg: string,
   { include }: Options = {}
 ): Promise<{ [version: string]: Release }> {
+  const { npmToken } = await getConfig()
+  const octokit = await getOctokit()
+
   const npmInfo = await npmRegistryFetch.json(pkg, {
-    token: await getNpmToken(),
+    token: npmToken,
   })
 
   const versions = Object.keys(npmInfo.versions).filter(includeFilter(include))
@@ -175,96 +185,4 @@ export async function fetchChangelog(
   }
 
   return releases
-}
-
-if (!module.parent) {
-  /* eslint-env node */
-  const { argv } = require('yargs')
-    .usage(
-      `Usage: $0 <package name>
-
-Prints changelog entries for an npm package from GitHub.
-(Other repository hosts aren't currently supported.)`
-    )
-    .option('r', {
-      alias: 'range',
-      describe: 'semver version range to get changelog entries for',
-      type: 'string',
-    })
-    .option('json', {
-      describe: 'output json',
-      type: 'boolean',
-    })
-    .option('prereleases', {
-      describe: 'include prerelease versions',
-      type: 'boolean',
-      default: false,
-    })
-    .default('minor', true)
-    .boolean('minor')
-    .hide('minor')
-    .describe('no-minor', 'exclude minor versions')
-    .default('patch', undefined)
-    .boolean('patch')
-    .hide('patch')
-    .describe('no-patch', 'exclude patch versions')
-    .hide('version')
-
-  let {
-    _: [pkg],
-    range,
-    includePrereleases: prerelease,
-    minor,
-    patch,
-    json,
-  } = argv
-
-  if (!pkg) {
-    require('yargs').showHelp()
-    process.exit(1)
-  }
-  if (!range) {
-    try {
-      // $FlowFixMe
-      const { version } = require(require.resolve(
-        require('path').join(pkg, 'package.json'),
-        {
-          paths: [process.cwd()],
-        }
-      ))
-      range = `>${version}`
-    } catch (error) {
-      // ignore
-    }
-  }
-
-  fetchChangelog(pkg, {
-    include: {
-      range,
-      prerelease,
-      minor,
-      patch,
-    },
-  }).then(
-    (changelog: { [version: string]: Release }) => {
-      if (json) {
-        process.stdout.write(JSON.stringify(changelog, null, 2))
-      } else {
-        for (const version in changelog) {
-          if (!changelog.hasOwnProperty(version)) continue
-          const { header, body, error } = changelog[version]
-          process.stdout.write(chalk.bold(header) + '\n\n')
-          if (body) process.stdout.write(body + '\n\n')
-          if (error) {
-            process.stdout.write(`Failed to get changelog: ${error.stack}\n\n`)
-          }
-        }
-      }
-      process.exit(0)
-    },
-    (error: Error) => {
-      process.stderr.write(error.stack + '\n')
-      process.exit(1)
-    }
-  )
 }

@@ -4,7 +4,7 @@
   "description": "fetch the changelog for an npm package from GitHub",
   "main": "index.js",
   "bin": {
-    "npm-fetch-changelog": "./index.js"
+    "npm-fetch-changelog": "./cli.js"
   },
   "engines": {
     "node": ">=8.0.0"
