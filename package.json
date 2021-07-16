@@ -128,7 +128,7 @@
     "chalk": "^2.4.2",
     "fs-extra": "^10.0.0",
     "js-base64": "^2.5.1",
-    "npm-registry-fetch": "^3.9.0",
+    "npm-registry-fetch": "^4.0.5",
     "semver": "^6.0.0",
     "yargs": "^13.2.2"
   },
