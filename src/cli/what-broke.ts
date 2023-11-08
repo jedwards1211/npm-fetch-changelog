@@ -7,7 +7,7 @@ const child = spawn(
   [
     require.resolve('./npm-fetch-changelog.js'),
     ...process.argv.slice(2),
-    '--no-minor',
+    '--major',
   ],
   {
     stdio: 'inherit',
