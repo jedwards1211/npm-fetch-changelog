@@ -34,6 +34,7 @@ only displays changelog entries for published versions.
 GitHub heavily rate limits public API requests, but allows more throughput for
 authenticated requests. If you set the `GH_TOKEN` environment variable to a
 personal access token, `npm-fetch-changelog` will use it when requesting GitHub releases.
+Otherwise `npm-fetch-changelog` will try to get it from `gh auth token` (`gh` is the GitHub CLI).
 
 `npm-fetch-changelog` will also use the `NPM_TOKEN` environment variable or try to get
 the npm token from your `~/.npmrc`, so that it can get information for private
@@ -80,42 +81,52 @@ npm-fetch-changelog 'foo@>=2'
 
 output JSON instead of Markdown
 
-### `--prereleases`
+### `--major`
+
+exclude minor and patch versions
+
+### `--minor`
+
+exclude patch versions
+
+### `--pre`
 
 include prerelease versions
-
-### `--no-minor`
-
-exclude minor versions
-
-### `--no-patch`
-
-exclude patch versions (defaults to `--no-minor`)
 
 # Node.js API
 
 (the CLI just uses this under the hood)
 
-```js
+```ts
 import { fetchChangelog } from 'npm-fetch-changelog'
 ```
 
-```js
+```ts
 async function fetchChangelog(
   package: string,
   options?: {
-    include?: ?(((version: string) => boolean) | {
-      range?: ?string,
-      prerelease?: ?boolean,
-      minor?: ?boolean,
-      patch?: ?boolean,
-    }),
+    include?:
+      | (
+          | ((version: string) => boolean)
+          | {
+              range?: ?string
+              prerelease?: ?boolean
+              minor?: ?boolean
+              patch?: ?boolean
+            }
+        )
+      | null
   }
-): Promise<{[version: string]: {
-  version: string,
-  header: string,
-  body?: string,
-  date?: Date,
-  error?: Error,
-}}>
+): Promise<
+  Record<
+    string,
+    {
+      version: string
+      header: string
+      body?: string
+      date?: Date
+      error?: Error
+    }
+  >
+>
 ```
