@@ -4,11 +4,12 @@ import chalk from 'chalk'
 import yargs from 'yargs/yargs'
 import path from 'path'
 import fs from 'fs-extra'
+import semver from 'semver'
 import { fetchChangelog } from '../index'
 import { debug } from '../util/debug'
 
 /* eslint-env node */
-const { argv } = yargs(process.argv.slice(2))
+const yargsInstance = yargs(process.argv.slice(2))
   .usage(
     `Usage: $0 <pkg>[@<range>]
 
@@ -20,6 +21,10 @@ Prints changelog entries for an npm package from GitHub.
       alias: 'r',
       describe: 'semver version range to get changelog entries for',
       type: 'string',
+      coerce: (value: string): string => {
+        if (!semver.valid(value)) throw new Error(`invalid --range: ${value}`)
+        return value
+      },
     },
     json: {
       describe: 'output json',
@@ -43,6 +48,7 @@ Prints changelog entries for an npm package from GitHub.
   .help()
 
 async function go() {
+  const { argv } = yargsInstance
   let {
     _: [pkg],
     range,
@@ -51,7 +57,10 @@ async function go() {
   debug('process.version:', process.version)
   debug('process.execPath:', process.execPath)
   debug(argv)
-  if (!pkg) process.exit(1)
+  if (!pkg) {
+    yargsInstance.showHelp()
+    process.exit(1)
+  }
 
   const filters = [
     ...(argv.major ? ['major'] : []),
