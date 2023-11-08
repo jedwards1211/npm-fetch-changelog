@@ -68,14 +68,14 @@
     "yargs": "^13.2.2"
   },
   "bin": {
-    "npm-fetch-changelog": "./cli/npm-fetch-changelog.js",
-    "what-broke": "./cli/what-broke.js"
+    "npm-fetch-changelog": "./dist/cli/npm-fetch-changelog.js",
+    "what-broke": "./dist/cli/what-broke.js"
   },
   "engines": {
     "node": ">=16"
   },
-  "main": "index.js",
-  "module": "index.mjs",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "packageManager": "pnpm@8.3.1"
 }

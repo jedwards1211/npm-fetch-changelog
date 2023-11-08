@@ -48,6 +48,8 @@ async function go() {
     range,
   } = argv
   const { json } = argv
+  debug('process.version:', process.version)
+  debug('process.execPath:', process.execPath)
   debug(argv)
   if (!pkg) process.exit(1)
 
