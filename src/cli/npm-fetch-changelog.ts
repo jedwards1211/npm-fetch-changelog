@@ -13,8 +13,8 @@ const yargsInstance = yargs(process.argv.slice(2))
   .usage(
     `Usage: $0 <pkg>[@<range>]
 
-Prints changelog entries for an npm package from GitHub.
-(Other repository hosts aren't currently supported.)`
+  Prints changelog entries for an npm package from GitHub.
+  (Other repository hosts aren't currently supported.)`
   )
   .options({
     range: {
@@ -22,7 +22,8 @@ Prints changelog entries for an npm package from GitHub.
       describe: 'semver version range to get changelog entries for',
       type: 'string',
       coerce: (value: string): string => {
-        if (!semver.valid(value)) throw new Error(`invalid --range: ${value}`)
+        if (!semver.validRange(value))
+          throw new Error(`invalid --range: ${value}`)
         return value
       },
     },
@@ -48,7 +49,7 @@ Prints changelog entries for an npm package from GitHub.
   .help()
 
 async function go() {
-  const { argv } = yargsInstance
+  const argv = await yargsInstance.argv
   let {
     _: [pkg],
     range,
@@ -57,7 +58,7 @@ async function go() {
   debug('process.version:', process.version)
   debug('process.execPath:', process.execPath)
   debug(argv)
-  if (!pkg) {
+  if (typeof pkg !== 'string') {
     yargsInstance.showHelp()
     process.exit(1)
   }

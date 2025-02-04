@@ -100,7 +100,7 @@ export type IncludeOption =
       patch?: boolean | null
     }
 
-function includeFilter(
+export function includeFilter(
   include?: IncludeOption | null
 ): (version: string) => boolean {
   if (!include) return () => true
@@ -125,11 +125,19 @@ export async function fetchChangelog(
 ): Promise<{ [version: string]: Release }> {
   const { npmToken } = await getConfig()
 
+  debug(
+    `fetchChangelog(${JSON.stringify(pkg)}, ${JSON.stringify({ include })})`
+  )
+
   const npmInfo: any = await npmRegistryFetch.json(pkg, {
-    token: npmToken,
+    forceAuth: {
+      token: npmToken,
+    },
   })
+  debug(`npmInfo.versions:\n  ${Object.keys(npmInfo.versions).join('\n  ')}`)
 
   const versions = Object.keys(npmInfo.versions).filter(includeFilter(include))
+  debug(`filtered versions:\n  ${versions.join('\n  ')}`)
 
   const releases = await Promise.all(
     versions.map(async (version) => {
