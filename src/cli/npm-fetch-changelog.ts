@@ -5,7 +5,7 @@ import yargs from 'yargs/yargs'
 import path from 'path'
 import fs from 'fs-extra'
 import semver from 'semver'
-import { fetchChangelog } from '../index'
+import { describeFilter, fetchChangelog } from '../index'
 import { debug } from '../util/debug'
 
 /* eslint-env node */
@@ -94,13 +94,22 @@ async function go() {
   }
 
   try {
+    const include = {
+      range,
+      prerelease: argv.pre,
+      minor: argv.pre || !argv.major,
+      patch: argv.pre || (!argv.major && !argv.minor),
+    }
+    // eslint-disable-next-line no-console
+    console.error(
+      `fetching ${describeFilter({
+        pkg,
+        include,
+        highlight: !process.env.CI && process.stdout.isTTY,
+      })}...`
+    )
     const changelog = await fetchChangelog(pkg, {
-      include: {
-        range,
-        prerelease: argv.pre,
-        minor: argv.pre || !argv.major,
-        patch: argv.pre || (!argv.major && !argv.minor),
-      },
+      include,
     })
     if (json) {
       process.stdout.write(JSON.stringify(changelog, null, 2))

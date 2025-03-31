@@ -7,6 +7,7 @@ import { Octokit } from 'octokit'
 import memoize from './util/memoize'
 import once from './util/once'
 import { debug } from './util/debug'
+import chalk from 'chalk'
 
 const getOctokit = once(async (): Promise<Octokit> => {
   const { githubToken } = await getConfig()
@@ -91,14 +92,14 @@ function parseRepositoryUrl(url: string): { owner: string; repo: string } {
   return { owner, repo: repo.replace(/\.git$/, '') }
 }
 
-export type IncludeOption =
-  | ((version: string) => boolean)
-  | {
-      range?: string | null
-      prerelease?: boolean | null
-      minor?: boolean | null
-      patch?: boolean | null
-    }
+export type IncludeOptionObject = {
+  range?: string | null
+  prerelease?: boolean | null
+  minor?: boolean | null
+  patch?: boolean | null
+}
+
+export type IncludeOption = ((version: string) => boolean) | IncludeOptionObject
 
 export function includeFilter(
   include?: IncludeOption | null
@@ -113,6 +114,43 @@ export function includeFilter(
     if (patch === false && semver.patch(version)) return false
     return true
   }
+}
+
+export function describeFilter({
+  pkg,
+  include,
+  highlight,
+}: {
+  pkg?: string
+  include?: IncludeOption | null
+  highlight?: boolean
+}) {
+  if (typeof include === 'function') {
+    return `versions matching custom function`
+  }
+  const { range, prerelease, minor, patch } =
+    include || ({} as IncludeOptionObject)
+
+  const types: string[] = [
+    ...(prerelease ? ['prerelease'] : []),
+    'major',
+    ...(minor === false ? [] : ['minor']),
+    ...(patch === false ? [] : ['patch']),
+  ]
+  return [
+    ...(range ? [] : [highlight ? chalk.greenBright('all') : 'all']),
+    types.slice(0, Math.max(1, types.length - 1)).join(', '),
+    ...(types.length > 1 ? [`and ${types[types.length - 1]}`] : []),
+    'versions',
+    ...(pkg ? [`of ${highlight ? chalk.bold(pkg) : pkg}`] : []),
+    ...(range
+      ? [
+          /^[<>]/.test(range)
+            ? `${highlight ? chalk.greenBright(range) : range}`
+            : `satisfying ${highlight ? chalk.greenBright(range) : range}`,
+        ]
+      : []),
+  ].join(' ')
 }
 
 export type Options = {
