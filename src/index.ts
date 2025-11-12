@@ -195,20 +195,27 @@ export async function fetchChangelog(
         const { owner, repo } = parseRepositoryUrl(url)
 
         try {
-          const body =
-            (
-              await doOctokit('repos', 'getReleaseByTag', {
+          const tagFormats = [
+            `v${version}`,
+            version,
+            `${pkg}@${version}`,
+            `${pkg}@v${version}`,
+          ]
+
+          let body: string | undefined
+          for (const tag of tagFormats) {
+            try {
+              const result = await doOctokit('repos', 'getReleaseByTag', {
                 owner,
                 repo,
-                tag: `v${version}`,
-              }).catch(() => {
-                return doOctokit('repos', 'getReleaseByTag', {
-                  owner,
-                  repo,
-                  tag: version,
-                })
+                tag,
               })
-            ).data.body ?? undefined
+              body = result.data.body ?? undefined
+              break
+            } catch {
+              continue
+            }
+          }
 
           release.body = body
 
