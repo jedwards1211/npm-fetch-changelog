@@ -200,6 +200,7 @@ export async function fetchChangelog(
             version,
             `${pkg}@${version}`,
             `${pkg}@v${version}`,
+            `${pkg}: v${version}`,
           ]
 
           let body: string | undefined
